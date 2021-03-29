@@ -1,0 +1,119 @@
+---
+- name: 'Set password for Directory daemon'
+  replace:
+    path: '/etc/bacula/bacula-dir.conf'
+    after: '  Maximum Concurrent Jobs = 20'
+    regexp: 'Password = "@@DIR_PASSWORD@@"'
+    replace: 'Password = "{{dir_bcl_passwd}}"'
+  become: yes
+  tags: dir_bcl_pass
+
+  #- name: 'Add; enable GZIP compress'
+  #  lineinfile:
+  #    path: '/etc/bacula/bacula-dir.conf'
+  #    insertafter: 'signature = MD5'
+  #    line: '      Compression = GZIP'
+  #  become: yes
+  #  tags: gzip
+
+- name: 'Specify backup target directory'
+  replace: 
+    path: '/etc/bacula/bacula-dir.conf'
+    regexp: 'File = /usr/sbin'
+    replace: 'File = /opt/BKPs'
+  become: yes
+  tags: target
+
+- name: 'Password for file daemon'
+  replace:
+    path: '/etc/bacula/bacula-dir.conf'
+    after: '  FDPort = 9102'
+    regexp: 'Password = "@@FD_PASSWORD@@"'
+    replace: 'Password = "{{clt_bcp_passwd}}"'
+  become: yes
+  tags: clt_bcl_pass
+
+- name: 'Change to FQDN of your host according to the note'
+  replace:
+    path: '/etc/bacula/bacula-dir.conf'
+    #    after: '# Do not use "localhost" here'
+    regexp: 'Address = localhost'
+    replace: 'Address = {{hostname}}'
+  become: yes
+  tags: fqdn
+
+- name: 'Password for Storage daemon'
+  replace: 
+    path: '/etc/bacula/bacula-dir.conf'
+    after: 'SDPort = 9103'
+    regexp: 'Password = "@@SD_PASSWORD@@"'
+    replace: 'Password = "{{strg_passwd}}"'
+  become: yes
+  tags: strg_passwd
+
+- name: 'Password of MariaDB bacula user'
+  replace: 
+    path: '/etc/bacula/bacula-dir.conf'
+    after: 'Name = MyCatalog'
+    regexp: 'dbname = "bacula"; dbuser = "bacula"; dbpassword = ""'
+    replace: '  dbname = "bacula"; dbuser = "bacula"; dbpassword = "{{bcl_passwd}}"'
+  become: yes
+  tags: db_pass
+  
+- name: 'Comment from line 320 to end'
+  replace: 
+    path: '/etc/bacula/bacula-dir.conf'
+    after: '# Restricted console used by tray-monitor to get the status of the director'
+    regexp: '^(.+)$'
+    replace: '# \1'
+  become: yes
+  tags: comment
+
+- name: 'Password for directory'
+  replace:
+    path: '/etc/bacula/bconsole.conf'
+    regexp: 'Password = "@@DIR_PASSWORD@@"'
+    replace: 'Password = "{{dir_bcl_passwd}}"'
+  become: yes
+  notify: 'Enable bacula-dir'
+  tags: pdir
+
+- name: 'Set password for storage daemon - Bacula storage'
+  replace:
+    path: '/etc/bacula/bacula-sd.conf'
+    after: 'Name = bacula-dir'
+    regexp: 'Password = "@@SD_PASSWORD@@"'
+    replace: 'Password = "{{strg_passwd}}"'
+  become: yes
+  tags: bcl_sd
+
+- name: 'Comment out'
+  replace: 
+    path: '/etc/bacula/bacula-sd.conf'
+    after: '#   status of the storage daemon'
+    before: '# Note, for a list of additional Device templates please'
+    regexp: '^(.+)$'
+    replace: '# \1'
+  become: yes
+  notify: 'Enable bacula-sd'
+  tags: comment_sd
+
+- name: 'Set password for file daemon'
+  replace: 
+    path: '/etc/bacula/bacula-fd.conf'
+    after: 'Name = bacula-dir'
+    regexp: 'Password = "@@FD_PASSWORD@@"'
+    replace: 'Password = "{{clt_bcp_passwd}}"'
+  become: yes
+  tags: bcl_fd
+
+- name: 'Comment out fd'
+  replace: 
+    path: '/etc/bacula/bacula-fd.conf'
+    after: '#   status of the file daemon'
+    before: '# "Global" File daemon configuration specifications'
+    regexp: '^(.+)$'
+    replace: '# \1'
+  become: yes
+  notify: 'Enable bacula-fd'
+  tags: comment_fd

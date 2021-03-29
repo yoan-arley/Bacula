@@ -1,0 +1,13 @@
+---
+# vars file for bacula
+mdb: '@mariadb:10.3'
+
+components: 
+  - bacula-director
+  - bacula-storage
+  - bacula-console
+  - bacula-client
+
+clients:
+  - bacula-client
+  - bacula-console

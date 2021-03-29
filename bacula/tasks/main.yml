@@ -1,0 +1,37 @@
+---
+# tasks file for bacula
+- name: 'Update server'
+  include: './update.yml'
+  tags: update
+
+- name: 'Install Mariadb:10.3'
+  include: './mdb.yml'
+  tags: install_mdb
+
+- name: 'Install Bacula components'
+  dnf: 
+    name: '{{item}}'
+    state: present
+    enablerepo: 'epel'
+  with_items: '{{components}}'
+  tags: bacula
+
+- name: 'Change default libbaccats.so to MariaDB'
+  shell: 
+  args: 
+    cmd: 'echo 1 | alternatives --config libbaccats.so'
+  tags: libbacula_mysql
+
+- name: 'Config MariaDB'
+  include: './mysql_bacula.yml'
+  tags: mysql_bacula
+
+- name: 'Create tables'
+  shell: 
+  args: 
+    cmd: "/usr/libexec/bacula/make_mysql_tables -u root -p'{{mdb_passwd}}'" 
+  tags: tbls_bacula
+
+- name: 'Configure Bacula Direct'
+  include: './config_bcl.yml'
+  tags: bacula_dir

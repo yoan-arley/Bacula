@@ -1,0 +1,92 @@
+---
+- name: 'Install MariaDB'
+  dnf: 
+    name: '{{item}}'
+    state: present
+  with_items: '{{mdb}}'
+
+- name: 'Set default charaset'
+  lineinfile:
+    path: '/etc/my.cnf.d/mariadb-server.cnf'
+    insertafter: '[mysqld]'
+    line: 'character-set-server = utf8mb4'
+  tags: mdb_charset_s
+
+- name: 'Set defaut charaset for clients'
+  lineinfile: 
+    path: '/etc/my.cnf.d/mariadb-server.cnf'
+    insertafter: '[server]'
+    line: '[Client]
+    default-character-set = utf8mb4'
+  tags: mdb_charset_c
+
+- name: 'Remote access mariadb'
+  include: './remote_mdb.yml'
+  tags: remote
+
+- name: 'Enable mariadb'
+  systemd:
+    name: 'mariadb'
+    enabled: yes
+    state: restarted
+  tags: mdb_enabled
+
+  #- name: 'Decrypt mdb_recure.sh'
+  #  shell:
+  #  args:
+  #    cmd: 'echo "Myaf1994" | ansible-vault decrypt ../templates/mdb_recure.sh'  
+
+- name: 'Copy mdb_recure.sh'
+  copy:
+    src: '../templates/mdb_recure.sh'
+    dest: '/home/golden'
+    mode: '+x'
+
+- name: 'Config mysql_secure_installation'
+  shell: 
+  args: 
+    cmd: '/home/golden/mdb_recure.sh'
+  become: yes
+    
+- name: 'Remove mdb_recure.sh'
+  file: 
+    path: '/home/golden/mdb_recure.sh'
+    state: absent
+
+- name: 'Add Python MySQL support on RedHat/CentOS'
+  yum:
+    name: 'python3-mysql.x86_64'
+    state: present
+    #  when: ansible_os_family == 'CentOS'
+
+- name: 'removing anonymous users'
+  mysql_user:
+    login_user: root
+    login_password: "{{mdb_passwd}}"
+    user: " "
+    state: 'absent'
+
+    #- name: 'Removing root remote access for IPV6'
+    #  mysql_user: 
+    #    login_user: root
+    #    login_password: "{{mdb_passwd}}"
+    #    user: 'root'
+    #    password: '{{mdb_passwd}}'
+    #    host: '::1'
+    #    state: absent
+
+- name: 'Removing root remote access for IPV4'
+  mysql_user: 
+    login_user: root
+    login_password: "{{mdb_passwd}}"
+    user: 'root'
+    password: '{{mdb_passwd}}'
+    host: 'sv-bkp.golden.net'
+    state: absent
+
+- name: 'Removing the test database'
+  mysql_db:
+    login_user: root
+    login_password: "{{mdb_passwd}}"
+    db: 'test'
+    state: absent

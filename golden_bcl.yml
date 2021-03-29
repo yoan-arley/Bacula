@@ -1,0 +1,7 @@
+---
+- name: "Install Bacula"
+  hosts: sv-bkp
+  become: yes
+  remote_user: golden
+  roles:
+    - role: "bacula"

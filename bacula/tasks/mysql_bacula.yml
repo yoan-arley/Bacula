@@ -1,0 +1,28 @@
+---
+- name: "Create database bacula"
+  mysql_db:
+    login_user: root
+    login_password: '{{mdb_passwd}}'
+    name: bacula
+    state: present
+  tags: create_db
+
+- name: "Create user bacula local"
+  mysql_user:
+    login_user: root
+    login_password: '{{mdb_passwd}}'
+    name: bacula
+    password: '{{bcl_passwd}}'
+    priv: 'bacula.*:ALL,GRANT'
+    host: 'localhost'
+    state: present
+
+- name: "Create user bacula remote"
+  mysql_user:
+    login_user: root
+    login_password: '{{mdb_passwd}}'
+    name: bacula
+    password: '{{bcl_passwd}}'
+    priv: 'bacula.*:ALL,GRANT'
+    host: '%'
+    state: present

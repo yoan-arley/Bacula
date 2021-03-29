@@ -1,0 +1,19 @@
+---
+- name: 'Config firewalld'
+  firewalld:
+    service: mysql
+    permanent: true
+    state: enabled
+  tags: mdb_fwd
+
+- name: 'Reload firewalld'
+  shell:
+    cmd: 'firewall-cmd --reload'
+  tags: r_fwd
+
+- name: 'Allow server to accept connections on all interfaces'
+  replace: 
+    path: '/etc/my.cnf.d/mariadb-server.cnf'
+    regexp: '#bind-address=0.0.0.0'
+    replace: 'bind-address=0.0.0.0'
+  tags: bind_address

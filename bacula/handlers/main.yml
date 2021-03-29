@@ -1,0 +1,35 @@
+---
+# handlers file for bacula
+- name: 'mariadb restarted'
+  systemd:
+    name: 'mariadb'
+    state: restarted
+    enabled: yes
+  become: yes
+  tags: mdb_restarted
+
+- name: 'Enable bacula-dir'
+  systemd:
+    name: bacula-dir
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: 'Enable bacula-sd'
+  systemd:
+    name: bacula-sd
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: 'Enable bacula-fd'
+  systemd:
+    name: bacula-fd
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: reload
+  shell:
+  args:
+    cmd: 'firewall-cmd --reload'

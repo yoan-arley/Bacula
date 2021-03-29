@@ -1,0 +1,85 @@
+---
+- hosts: Clients
+  tasks:
+  become: yes
+  remote_user: golden
+
+  vars: 
+    clients: 
+      - bacula-client
+      - bacula-console
+
+   handlers:
+     - name: 'Enable bacula-dir'
+       systemd:
+         name: 'bacula-dir'
+         state: restarted
+         enabled: yes
+
+     - name: 'Enable bacula-fd'
+       systemd:
+         name: 'bacula-fd'
+         state: restarted
+         enabled: yes
+
+  - name: 'Install Bacula client for RedHat/CentOS'
+    dnf:
+      name: '{{item}}'
+      state: present
+    wich_items: '{{clients}}'
+    when: ansible_facts['os_family'] == "CentOS"
+
+  - name: 'Install Bacula client for Debian/Ubuntu'
+    apt:
+      name: '{{item}}'
+      state: present
+    wich_items: '{{clients}}'
+    when: ansible_facts['os_family'] == "Ubuntu"
+
+  - name: 'Firewalld is running'
+    firewalld:
+      service: 'bacula-client'
+      permanent: yes
+      state: enabled
+    when: ansible_facts['os_family'] == "CentOS"
+    become: yes
+    notify: reload
+    tags: frw2ld
+
+  - name: 'Set password for file daemon'
+    replace:
+      path: '/etc/bacula/bacula-fd.conf'
+      after: 'Name = bacula-dir'
+      regexp: 'Password = "@@FD_PASSWORD@@"'
+      replace: 'Password = "{{clt_bcp_passwd}}"'
+    become: yes
+    tags: bcl_fd
+
+  - name: 'Comment out fd'
+    replace:
+      path: '/etc/bacula/bacula-fd.conf'
+      after: '#   status of the file daemon'
+      before: '# "Global" File daemon configuration specifications'
+      regexp: '^(.+)$'
+      replace: '# \1'
+    become: yes
+    tags: comment_fd
+
+  - name: 'Password for directory'
+    replace:
+      path: '/etc/bacula/bconsole.conf'
+      regexp: 'address = localhost'
+      replace: 'address = {{hostname}}'
+    become: yes
+    tags: clt_bcl 
+
+  - name: 'Password for directory'
+    replace:
+      path: '/etc/bacula/bconsole.conf'
+      regexp: 'Password = "@@DIR_PASSWORD@@"'
+      replace: 'Password = "{{dir_bcl_passwd}}"'
+    become: yes
+    notify: 
+      - Enable bacula-dir
+      - Enable bacula-fd
+    tags: pdir_clt_bcl
